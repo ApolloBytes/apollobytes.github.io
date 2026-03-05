@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apollo | Digital Garden</title>
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono/index.css" rel="stylesheet">
+
+<style>
+:root{
+--bg:#0a0a0a;
+--panel:#111;
+--border:#222;
+--text:#d1d5db;
+--muted:#6b7280;
+--accent:#00ff9c;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;font-family:"JetBrains Mono",monospace}
+
+body{
+background:var(--bg);
+color:var(--text);
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+background:repeating-linear-gradient(
+ to bottom,
+ rgba(255,255,255,0.02),
+ rgba(255,255,255,0.02) 1px,
+ transparent 1px,
+ transparent 3px
+);
+pointer-events:none;
+}
+
+.window{
+width:92%;
+max-width:1250px;
+height:88vh;
+border:1px solid var(--border);
+background:var(--panel);
+display:flex;
+flex-direction:column;
+}
+
+.header{
+display:flex;
+align-items:center;
+padding:10px;
+border-bottom:1px solid var(--border);
+}
+
+.controls{display:flex;gap:6px;margin-right:12px}
+
+.controls span{width:12px;height:12px;border-radius:50%;display:block}
+.red{background:#ff5f56}
+.yellow{background:#ffbd2e}
+.green{background:#27c93f}
+
+.title{color:var(--muted);font-size:14px}
+
+.main{flex:1;display:grid;grid-template-columns:270px 1fr}
+
+.sidebar{border-right:1px solid var(--border);padding:20px;font-size:14px;overflow:auto}
+
+.section{margin-bottom:28px}
+
+.section-title{color:var(--accent);margin-bottom:10px}
+
+.nav a{display:block;text-decoration:none;color:var(--text);padding:4px 0;cursor:pointer}
+.nav a:hover{color:var(--accent)}
+
+.repo{margin-bottom:8px;font-size:13px}
+
+.content{padding:25px;overflow:auto}
+
+.file-title{color:var(--accent);margin-bottom:16px}
+
+.prompt{
+border-top:1px solid var(--border);
+padding:10px;
+display:flex;
+align-items:center;
+color:var(--accent)
+}
+
+.prompt input{
+background:transparent;
+border:none;
+color:var(--text);
+font-family:"JetBrains Mono",monospace;
+font-size:14px;
+margin-left:6px;
+outline:none;
+width:100%;
+}
+
+pre{white-space:pre-wrap;line-height:1.6}
+
+.theme-buttons button{
+margin-right:6px;
+margin-top:6px;
+background:var(--border);
+border:none;
+color:var(--text);
+padding:4px 8px;
+cursor:pointer;
+}
+
+.theme-buttons button:hover{background:var(--accent);color:black}
+
+@media(max-width:850px){
+.main{grid-template-columns:1fr}
+.sidebar{border-right:none;border-bottom:1px solid var(--border)}
+}
+
+</style>
+</head>
+<body>
+
+<div class="window">
+
+<div class="header">
+<div class="controls">
+<span class="red"></span>
+<span class="yellow"></span>
+<span class="green"></span>
+</div>
+<div class="title">apollo.systems terminal garden</div>
+</div>
+
+<div class="main">
+
+<div class="sidebar">
+
+<div class="section">
+<div class="section-title">SYSTEM STATUS</div>
+<pre>
+user: apollo
+focus: linux / cybersecurity
+location: singapore
+editor: neovim
+shell: zsh
+</pre>
+
+<div>local time: <span id="time"></span></div>
+</div>
+
+<div class="section">
+<div class="section-title">COMMANDS</div>
+<div class="nav">
+<a onclick="openFile('about')">./about.sh</a>
+<a onclick="openFile('projects')">./projects.py</a>
+<a onclick="openFile('skills')">./skills.json</a>
+<a onclick="openFile('notes')">./notes.md</a>
+<a onclick="openFile('contact')">./contact.sh</a>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">GITHUB REPOS</div>
+<div id="repos">loading...</div>
+</div>
+
+<div class="section">
+<div class="section-title">THEME</div>
+<div class="theme-buttons">
+<button onclick="setTheme('green')">green</button>
+<button onclick="setTheme('purple')">purple</button>
+<button onclick="setTheme('orange')">orange</button>
+</div>
+</div>
+
+</div>
+
+<div class="content">
+<div class="file-title" id="fileTitle">README.md</div>
+<pre id="fileContent">booting apollo.systems...
+loading modules...
+
+Welcome to the Apollo digital garden.
+
+Linux enthusiast.
+Cybersecurity learner.
+Explorer of systems.
+
+Use commands on the left or the terminal below.</pre>
+</div>
+
+</div>
+
+<div class="prompt">
+root@apollo:~$ <input id="terminal" autocomplete="off" placeholder="type help" />
+</div>
+
+</div>
+
+<script>
+
+const files={
+about:`# About
+
+Apollo is a Linux enthusiast focused on systems and cybersecurity.
+
+Interests:
+
+- Linux internals
+- cybersecurity
+- open source
+- automation
+
+This site acts as a digital garden for experiments and notes.`,
+
+projects:`# Projects
+
+This section highlights things I experiment with.
+
+- Linux configuration setups
+- security lab environments
+- workflow automation tools
+
+GitHub repositories are listed in the sidebar.`,
+
+skills:`{
+ "focus": ["Linux","Cybersecurity","Open Source"],
+ "tools": ["Git","Neovim","Docker"],
+ "learning": ["Networking","Security Testing"]
+}`,
+
+notes:`# Notes
+
+Short technical notes and experiments.
+
+Topics include:
+
+- Linux tuning
+- shell tricks
+- security experiments`,
+
+contact:`# Contact
+
+GitHub
+https://github.com/ApolloBytes
+
+Email
+<a href="mailto:ernestpermanent@gmail.com">Email Me</a>
+
+You can also reach me through GitHub.`
+}
+
+function openFile(name){
+ const content = files[name]
+ const container = document.getElementById("fileContent")
+
+ // allow HTML for things like the email button
+ container.innerHTML = content
+
+ document.getElementById("fileTitle").textContent=name
+}
+
+function updateTime(){
+ const now=new Date()
+ document.getElementById("time").textContent=now.toLocaleTimeString()
+}
+setInterval(updateTime,1000)
+updateTime()
+
+function setTheme(theme){
+ if(theme==='green') document.documentElement.style.setProperty('--accent','#00ff9c')
+ if(theme==='purple') document.documentElement.style.setProperty('--accent','#a855f7')
+ if(theme==='orange') document.documentElement.style.setProperty('--accent','#ff7a18')
+}
+
+async function loadRepos(){
+ try{
+  const res=await fetch('https://api.github.com/users/ApolloBytes/repos')
+  const data=await res.json()
+  const container=document.getElementById('repos')
+  container.innerHTML=''
+  data.slice(0,6).forEach(r=>{
+   const el=document.createElement('div')
+   el.className='repo'
+   el.innerHTML=`<a href="${r.html_url}" target="_blank">${r.name}</a>`
+   container.appendChild(el)
+  })
+ }catch{
+  document.getElementById('repos').textContent='unable to load repos'
+ }
+}
+
+loadRepos()
+
+const terminal=document.getElementById('terminal')
+
+terminal.addEventListener('keydown',e=>{
+ if(e.key==='Enter'){
+  const cmd=terminal.value.trim()
+  runCommand(cmd)
+  terminal.value=''
+ }
+})
+
+function runCommand(cmd){
+
+ if(cmd==='help'){
+  openOutput(`available commands:
+
+help
+about
+projects
+skills
+notes
+contact
+repos
+email
+clear`)
+  return
+ }
+
+ if(cmd==='about') return openFile('about')
+ if(cmd==='projects') return openFile('projects')
+ if(cmd==='skills') return openFile('skills')
+ if(cmd==='notes') return openFile('notes')
+ if(cmd==='contact') return openFile('contact')
+
+ if(cmd==='email'){
+  openOutput('email: ernestpermanent@gmail.com')
+  return
+ }
+
+ if(cmd==='repos'){
+  const list=[...document.querySelectorAll('#repos a')]
+  let out='github repositories:\n\n'
+  list.forEach(r=> out+=r.textContent+'\n')
+  openOutput(out)
+  return
+ }
+
+ if(cmd==='clear'){
+  document.getElementById('fileContent').textContent=''
+  return
+ }
+
+ openOutput('command not found')
+}
+
+function openOutput(text){
+ document.getElementById('fileTitle').textContent='terminal'
+ document.getElementById('fileContent').textContent=text
+}
+
+</script>
+
+</body>
+</html>
