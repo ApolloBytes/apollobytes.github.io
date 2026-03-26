@@ -67,7 +67,7 @@ border-bottom:1px solid var(--border);
 
 .title{color:var(--muted);font-size:14px}
 
-.main{flex:1;display:grid;grid-template-columns:270px 1fr}
+.main{flex:1;display:grid;grid-template-columns:270px 1fr;overflow:hidden}
 
 .sidebar{border-right:1px solid var(--border);padding:20px;font-size:14px;overflow:auto}
 
@@ -77,6 +77,27 @@ border-bottom:1px solid var(--border);
 
 .nav a{display:block;text-decoration:none;color:var(--text);padding:4px 0;cursor:pointer}
 .nav a:hover{color:var(--accent)}
+
+/* Prominent news link */
+.nav-news{
+  display:block;
+  text-decoration:none;
+  cursor:pointer;
+  color:var(--accent);
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:0.03em;
+  padding:8px 10px;
+  margin-bottom:12px;
+  border:1px solid var(--accent);
+  border-left:3px solid var(--accent);
+  background:rgba(0,255,156,0.05);
+  transition:background 0.2s;
+}
+.nav-news:hover{
+  background:rgba(0,255,156,0.12);
+  color:var(--accent);
+}
 
 .repo{margin-bottom:8px;font-size:13px}
 
@@ -117,6 +138,23 @@ cursor:pointer;
 
 .theme-buttons button:hover{background:var(--accent);color:black}
 
+/* News feed styles */
+.news-feed{display:flex;flex-direction:column;gap:16px}
+
+.news-card{
+  border:1px solid var(--border);
+  border-left:3px solid var(--accent);
+  padding:14px 16px;
+  cursor:pointer;
+  transition:background 0.15s;
+  text-decoration:none;
+}
+.news-card:hover{background:rgba(255,255,255,0.03)}
+
+.news-card-date{color:var(--muted);font-size:12px;margin-bottom:4px}
+.news-card-title{color:var(--accent);font-size:15px;font-weight:700;margin-bottom:6px}
+.news-card-excerpt{color:var(--text);font-size:13px;line-height:1.6}
+
 @media(max-width:850px){
 .main{grid-template-columns:1fr}
 .sidebar{border-right:none;border-bottom:1px solid var(--border)}
@@ -150,12 +188,15 @@ location: singapore
 editor: neovim
 shell: zsh
 </pre>
-
 <div>local time: <span id="time"></span></div>
 </div>
 
 <div class="section">
 <div class="section-title">COMMANDS</div>
+
+<!-- Prominent news link sits above the rest -->
+<a class="nav-news" onclick="openFile('news')">./news.md</a>
+
 <div class="nav">
 <a onclick="openFile('about')">./about.sh</a>
 <a onclick="openFile('projects')">./projects.py</a>
@@ -183,7 +224,7 @@ shell: zsh
 
 <div class="content">
 <div class="file-title" id="fileTitle">README.md</div>
-<pre id="fileContent">booting apollo.systems...
+<div id="fileContent"><pre>booting apollo.systems...
 loading modules...
 
 Welcome to the Apollo digital garden.
@@ -192,7 +233,7 @@ Linux enthusiast.
 Cybersecurity learner.
 Explorer of systems.
 
-Use commands on the left or the terminal below.</pre>
+Use commands on the left or the terminal below.</pre></div>
 </div>
 
 </div>
@@ -203,6 +244,7 @@ root@apollo:~$ <input id="terminal" autocomplete="off" placeholder="type help" /
 
 </div>
 
+<script src="news-data.js"></script>
 <script>
 
 const files={
@@ -257,43 +299,67 @@ You can also reach me through GitHub.`
 }
 
 function openFile(name){
- const content = files[name]
- const container = document.getElementById("fileContent")
+  const container = document.getElementById("fileContent")
+  document.getElementById("fileTitle").textContent = name
 
- // allow HTML for things like the email button
- container.innerHTML = content
+  if(name === 'news'){
+    renderNewsFeed(container)
+    return
+  }
 
- document.getElementById("fileTitle").textContent=name
+  const content = files[name]
+  container.innerHTML = '<pre>' + content + '</pre>'
+}
+
+function renderNewsFeed(container){
+  if(typeof articles === 'undefined' || articles.length === 0){
+    container.innerHTML = '<pre>no articles found.\n\nmake sure news-data.js is loaded.</pre>'
+    return
+  }
+
+  const sorted = [...articles].sort((a,b) => new Date(b.date) - new Date(a.date))
+
+  let html = '<div class="news-feed">'
+  sorted.forEach(article => {
+    html += `
+      <div class="news-card" onclick="window.open('${article.file}','_blank')">
+        <div class="news-card-date">${article.date}</div>
+        <div class="news-card-title">> ${article.title}</div>
+        <div class="news-card-excerpt">${article.excerpt}</div>
+      </div>`
+  })
+  html += '</div>'
+  container.innerHTML = html
 }
 
 function updateTime(){
- const now=new Date()
- document.getElementById("time").textContent=now.toLocaleTimeString()
+  const now=new Date()
+  document.getElementById("time").textContent=now.toLocaleTimeString()
 }
 setInterval(updateTime,1000)
 updateTime()
 
 function setTheme(theme){
- if(theme==='green') document.documentElement.style.setProperty('--accent','#00ff9c')
- if(theme==='purple') document.documentElement.style.setProperty('--accent','#a855f7')
- if(theme==='orange') document.documentElement.style.setProperty('--accent','#ff7a18')
+  if(theme==='green') document.documentElement.style.setProperty('--accent','#00ff9c')
+  if(theme==='purple') document.documentElement.style.setProperty('--accent','#a855f7')
+  if(theme==='orange') document.documentElement.style.setProperty('--accent','#ff7a18')
 }
 
 async function loadRepos(){
- try{
-  const res=await fetch('https://api.github.com/users/ApolloBytes/repos')
-  const data=await res.json()
-  const container=document.getElementById('repos')
-  container.innerHTML=''
-  data.slice(0,6).forEach(r=>{
-   const el=document.createElement('div')
-   el.className='repo'
-   el.innerHTML=`<a href="${r.html_url}" target="_blank">${r.name}</a>`
-   container.appendChild(el)
-  })
- }catch{
-  document.getElementById('repos').textContent='unable to load repos'
- }
+  try{
+    const res=await fetch('https://api.github.com/users/ApolloBytes/repos')
+    const data=await res.json()
+    const container=document.getElementById('repos')
+    container.innerHTML=''
+    data.slice(0,6).forEach(r=>{
+      const el=document.createElement('div')
+      el.className='repo'
+      el.innerHTML=`<a href="${r.html_url}" target="_blank">${r.name}</a>`
+      container.appendChild(el)
+    })
+  }catch{
+    document.getElementById('repos').textContent='unable to load repos'
+  }
 }
 
 loadRepos()
@@ -301,60 +367,61 @@ loadRepos()
 const terminal=document.getElementById('terminal')
 
 terminal.addEventListener('keydown',e=>{
- if(e.key==='Enter'){
-  const cmd=terminal.value.trim()
-  runCommand(cmd)
-  terminal.value=''
- }
+  if(e.key==='Enter'){
+    const cmd=terminal.value.trim()
+    runCommand(cmd)
+    terminal.value=''
+  }
 })
 
 function runCommand(cmd){
-
- if(cmd==='help'){
-  openOutput(`available commands:
+  if(cmd==='help'){
+    openOutput(`available commands:
 
 help
 about
 projects
 skills
 notes
+news
 contact
 repos
 email
 clear`)
-  return
- }
+    return
+  }
 
- if(cmd==='about') return openFile('about')
- if(cmd==='projects') return openFile('projects')
- if(cmd==='skills') return openFile('skills')
- if(cmd==='notes') return openFile('notes')
- if(cmd==='contact') return openFile('contact')
+  if(cmd==='about') return openFile('about')
+  if(cmd==='projects') return openFile('projects')
+  if(cmd==='skills') return openFile('skills')
+  if(cmd==='notes') return openFile('notes')
+  if(cmd==='contact') return openFile('contact')
+  if(cmd==='news') return openFile('news')
 
- if(cmd==='email'){
-  openOutput('email: ernestpermanent@gmail.com')
-  return
- }
+  if(cmd==='email'){
+    openOutput('email: ernestpermanent@gmail.com')
+    return
+  }
 
- if(cmd==='repos'){
-  const list=[...document.querySelectorAll('#repos a')]
-  let out='github repositories:\n\n'
-  list.forEach(r=> out+=r.textContent+'\n')
-  openOutput(out)
-  return
- }
+  if(cmd==='repos'){
+    const list=[...document.querySelectorAll('#repos a')]
+    let out='github repositories:\n\n'
+    list.forEach(r=> out+=r.textContent+'\n')
+    openOutput(out)
+    return
+  }
 
- if(cmd==='clear'){
-  document.getElementById('fileContent').textContent=''
-  return
- }
+  if(cmd==='clear'){
+    document.getElementById('fileContent').innerHTML=''
+    return
+  }
 
- openOutput('command not found')
+  openOutput('command not found')
 }
 
 function openOutput(text){
- document.getElementById('fileTitle').textContent='terminal'
- document.getElementById('fileContent').textContent=text
+  document.getElementById('fileTitle').textContent='terminal'
+  document.getElementById('fileContent').innerHTML='<pre>'+text+'</pre>'
 }
 
 </script>
